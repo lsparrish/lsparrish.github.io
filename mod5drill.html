@@ -63,7 +63,7 @@ body{font-family:sans-serif;background:#1e293b;color:#f8fafc;margin:0;height:100
 </div>
 
 <script>
-let a,b,ans,score=0,minVal=1,width=3,mult=1,streak=0,prevA,prevB,hintMode=0,audioCtx;
+let a,b,ans,score=0,minVal=5,width=3,mult=1,streak=0,prevA,prevB,hintMode=0,audioCtx;
 
 const $=id=>document.getElementById(id);
 const sound=(freqs,dur=0.3,type='sine')=>{
@@ -79,7 +79,7 @@ const sound=(freqs,dur=0.3,type='sine')=>{
 };
 
 const update=()=>{
-    $('range').textContent=`${minVal}-${minVal+width}`;
+    $('range').textContent=`${minVal}`+", "+`${minVal+width}`;
     $('mult').textContent=mult;
 };
 
@@ -151,12 +151,13 @@ document.onkeydown=e=>{
             $('result').className='result correct';
             if(streak%5===0){
                 if(minVal<5){minVal++;update()}
-                else if(minVal===5){minVal=0;width++;update()}
-                else if(width>5){mult++;update()}
+                if(minVal>1){minVal--;width++;width++;update()}
+                if(mult<20){mult++;update()} else {mult=1;width++}
             }
             newProblem();
         }else{
-            sound([110],0.5,'sawtooth');
+
+            sound([261.63, 293.66, 329.63]);
             streak=0;score--;
             $('result').textContent='Try again!';
             $('result').className='result wrong';
