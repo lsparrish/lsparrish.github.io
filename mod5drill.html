@@ -11,6 +11,7 @@ body{font-family:sans-serif;background:#1e293b;color:#f8fafc;margin:0;height:100
 .control-group{display:flex;align-items:center;justify-content:center;gap:15px}
 .control-label{min-width:80px;text-align:right;font-size:14px;color:#cbd5e1}
 .value-control{display:flex;align-items:center;gap:8px}
+.instructions{max-width:300px;text-align:left;}
 .btn,.value-display{border-radius:6px;padding:8px;display:flex;align-items:center;justify-content:center;font-weight:600}
 .btn{background:#334155;border:none;color:#f8fafc;width:32px;height:32px;cursor:pointer;font-size:16px;user-select:none}
 .btn:hover{background:#475569}
@@ -32,7 +33,6 @@ body{font-family:sans-serif;background:#1e293b;color:#f8fafc;margin:0;height:100
 </head>
 <body>
 <div class="container">
-<div id="instructions">T = toggle mode<br>H = cycle hints</div>
 <div class="controls" id="controls">
 <div class="control-group">
 <div class="control-label">Range:</div>
@@ -60,15 +60,23 @@ body{font-family:sans-serif;background:#1e293b;color:#f8fafc;margin:0;height:100
 <div class="score" id="score">Score: 0</div>
 <div class="streak" id="streak">Streak: 0</div>
 <div class="hint-container" id="hints"></div>
+<div class="instructions" id="instructions">
+Modulus 5 drill for improving your recall of multiplication facts.<br>
+There are only 5 answers. However, 5 through 9 are equivalent to 0 through 4, so you can practice base 10.
+Press T to toggle distracting details.<br>
+Press H to switch between hint modes.<br>
+Press I to hide instructions.<br>
+Press . to toggle sound.<br>
+Use ASDFG, ZXCVB, or number keys.</div>
 </div>
-
 <script>
-let a,b,ans,score=0,minVal=5,width=3,mult=1,streak=0,prevA,prevB,hintMode=0,audioCtx;
+let a,b,ans,score=0,minVal=5,width=3,mult=1,streak=0,prevA,prevB,hintMode=0,audioCtx,soundOn=1;
 
 const $=id=>document.getElementById(id);
 const sound=(freqs,dur=0.3,type='sine')=>{
     if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
     const t=audioCtx.currentTime;
+    if (!soundOn) return;
     freqs.forEach((f,i)=>{
         const o=audioCtx.createOscillator(),g=audioCtx.createGain();
         o.connect(g);g.connect(audioCtx.destination);
@@ -83,14 +91,26 @@ const update=()=>{
     $('mult').textContent=mult;
 };
 
-const actions=[
-    ()=>minVal>1&&minVal--,
-    ()=>minVal<20&&minVal++,
-    ()=>width>1&&width--,
-    ()=>width<10&&width++,
-    ()=>mult>1&&mult--,
-    ()=>mult<30&&mult++
-];
+const controlActions = (() => {
+    const ranges = [[1,20], [1,10], [1,30]];
+    const accessors = [
+        (val) => val === undefined ? minVal : minVal = val,
+        (val) => val === undefined ? width : width = val,
+        (val) => val === undefined ? mult : mult = val
+    ];
+
+    const adj = (i, delta) => () => {
+        const [min, max] = ranges[i];
+        const newVal = accessors[i]() + delta;
+        if (newVal >= min && newVal <= max) {
+            accessors[i](newVal);
+            update();
+            newProblem();
+        }
+    };
+
+    return ranges.flatMap((_, i) => [adj(i, -1), adj(i, +1)]);
+})();
 
 const highlight=()=>{
     document.querySelectorAll('.highlight').forEach(el=>el.classList.remove('highlight'));
@@ -110,7 +130,7 @@ const highlight=()=>{
 const newProblem=()=>{
     do{a=Math.floor(Math.random()*(width+1))+minVal;b=mult}while(a===prevA&&b===prevB);
     prevA=a;prevB=b;ans=(a*b)%5;
-    $('problem').textContent=`${a} × ${b} % 5 = ?`;
+    $('problem').textContent=`${a} × ${b}`;
     highlight();
 };
 
@@ -125,14 +145,17 @@ const makeTable=(cap,data,cols)=>{
 };
 
 $('controls').onclick=e=>{
-    const action=actions[e.target.dataset.action];
-    if(action&&action()){update();newProblem()}
+    const actionIndex = e.target.dataset.action;
+    if(actionIndex !== undefined) {
+        controlActions[parseInt(actionIndex)]();
+    }
 };
 
 document.onkeydown=e=>{
-    if(e.key==='t'){
-        $('controls').classList.toggle('hidden');
-        $('hints').classList.toggle('hidden');
+    if (e.key.toUpperCase() === 'T') {
+        ['instructions','controls','streak','result','score','hints']
+            .forEach(id => document.getElementById(id)?.classList.toggle('hidden'));
+        hintMode = 3;
         return;
     }
     if(e.key.toUpperCase()==='H'){
@@ -140,7 +163,16 @@ document.onkeydown=e=>{
         highlight();
         return;
     }
-    const userAns='GASDF0123456789'.indexOf(e.key.toUpperCase());
+    if(e.key.toUpperCase()==='I'){
+        $('instructions').classList.add('hidden');
+        highlight();
+        return;
+    }
+    if(e.key==='.'){
+        soundOn=0
+        return;
+    }
+    const userAns='GASDFZXCVB0123456789'.indexOf(e.key.toUpperCase());
     if(userAns!==-1){
         if(userAns%5===ans){
             sound([261.63,329.63,392.00]);
@@ -148,7 +180,6 @@ document.onkeydown=e=>{
             $('score').textContent=`Score: ${score}`;
             $('streak').textContent=`Streak: ${streak}`;
             $('result').textContent='Correct!';
-            $('result').className='result correct';
             if(streak%5===0){
                 if(minVal<5){minVal++;update()}
                 if(minVal>1){minVal--;width++;width++;update()}
@@ -156,7 +187,6 @@ document.onkeydown=e=>{
             }
             newProblem();
         }else{
-
             sound([261.63, 293.66, 329.63]);
             streak=0;score--;
             $('result').textContent='Try again!';
@@ -167,7 +197,7 @@ document.onkeydown=e=>{
 };
 
 $('hints').innerHTML=makeTable('%5 patterns','000000012340024130031420043210000000',6)+
-                    makeTable('Equivalent Keys','1234567890ASDFG',5);
+                    makeTable('Equivalent Keys','1234567890ASDFGZXCVB',5);
 update();
 newProblem();
 </script>
