@@ -130,7 +130,7 @@ document.onkeydown=e=>{
             }
             newProblem();
         }else{
-            sound([220.00,196.00,174.61]);
+            sound([261.63, 293.66, 329.63]);
             streak=0;score=Math.max(0,score-1);
             $('result').textContent='Try again!';
             $('result').classList.contains('hidden') || ($('result').className = 'result wrong');
@@ -152,7 +152,7 @@ const createMobileKeys = () => {
     $('mobile-keys').style.display = 'flex';
     $('mobile-keys').innerHTML = `
         <div class="mobile-keys">
-            ${[0,1,2,3,4].map(i => 
+            ${[0,1,2,3,4,0].map(i => 
                 `<div class="mobile-key" onclick="document.onkeydown({key: '${i}'})">${i}</div>`
             ).join('')}
         </div>
