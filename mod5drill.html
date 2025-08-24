@@ -49,7 +49,8 @@ Press I to hide instructions.<br>
 Press . to toggle sound.<br>
 Press , to toggle four-key mode (no 0 answers).<br>
 These have clickable elements associated for mobile users.<br>
-Use ASDFG, ZXCVB, or number keys.</div>
+Use ASDFG, ZXCVB, or number keys.<br>
+On mobile, there should be a row of clickable numbers. Clicking on the problem itself will hide details, disable sound, and enable four-key mode. You can also click this text to make it go away.</div>
 </div>
 <script>
 let a,b,ans,score=0,minVal=5,width=3,mult=1,streak=0,prevA,prevB,hintMode=0,audioCtx,soundOn=1,volume=0.1,fourKeyMode=0,$=id=>document.getElementById(id);
@@ -118,6 +119,7 @@ document.onkeydown=e=>{
             elements.forEach(id=>$(id)?.classList.toggle('hidden', !allHidden));
             highlight();
             fourKeyMode=1-fourKeyMode;
+            createMobileKeys();
         },
         'H':()=>{
             hintMode=(hintMode+1)%4;
@@ -156,7 +158,7 @@ document.onkeydown=e=>{
                 if (minVal < 9 && width < 5) { minVal++; width++; }
                 if (mult < 20) { mult++; }
                 else {mult = 1; width++; minVal = Math.max(1, minVal - 1); }
-                if (mult%5==0 && fourKeyMode==1) {mult++; } 
+                if (mult%5==0 && fourKeyMode==1) {mult++; }
             }
             newProblem();
         }else{
@@ -181,13 +183,11 @@ const createMobileKeys = () => {
         $('mobile-keys').style.display = 'none'; 
         return;
     }
+    let mobileKeys = [];
+    if (fourKeyMode===1) {mobileKeys = [1,2,3,4]; newProblem()} else {mobileKeys = [0,1,2,3,4,0]}
     $('mobile-keys').style.display = 'flex';
     $('mobile-keys').innerHTML = `
-        <div class="mobile-keys">
-            ${[0,1,2,3,4,0].map(i => 
-                `<div class="mobile-key" onclick="document.onkeydown({key: '${i}'})">${i}</div>`
-            ).join('')}
-        </div>
+        ${mobileKeys.map(i => `<div class="mobile-key" id="mobile-key-${i}" onclick="document.onkeydown({key: '${i}'})">${i}</div>`).join('')}
     `;
 };
 $('problem').addEventListener('click', () => {['T', ' ', '.'].forEach(key => document.dispatchEvent(new KeyboardEvent('keydown', {key})));});
